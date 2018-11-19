@@ -28,4 +28,18 @@ package ddr3_mem_pkg;
 
 	ddr3_states State, nextState;
 
+	typedef	struct{
+		logic	[3:0]	MRS,
+				REF, 
+				SRE,
+				SRX,
+				PRE,
+				ACT,
+				WR,
+				RD,
+				NOP;
+	} ddr3_commands;
+
+	ddr3_commands Command;
+
 endpackage

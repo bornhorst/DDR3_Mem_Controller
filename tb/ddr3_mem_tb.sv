@@ -26,13 +26,13 @@ ddr3_cpu_intf	cont_intf_cpu(.CPU_CLK(cpu_clk));
 // ********** Module Instantiations ********** //
 ddr3_mem_cont MEM_CONT(
 	.cpu_clk(cpu_clk),
-	.cont_to_cpu(cont_intf_cpu.mem_controller),
-	.cont_to_mem(cont_intf_mem.mem_cont_signals)
+	.cont_to_cpu(cont_intf_cpu.cont_to_cpu),
+	.cont_to_mem(cont_intf_mem.cont_to_mem)
 );
 
 ddr3_mem_cpu MEM_CPU(
 	.cpu_clk(cpu_clk),
-	.cpu_to_cont(cont_intf_cpu.cpu)
+	.cpu_to_cont(cont_intf_cpu.cpu_to_cont)
 );
 
 // ********** Basic TB ********** //

@@ -11,7 +11,8 @@
 interface ddr3_mem_intf(input logic CPU_CLK);
 
 	logic 		RESET_N; 	// reset signal
-	logic 		CK;		// match cpu clock
+	logic 		CK;		// high on posedge cpu clk
+	logic		CK_N;		// high on negedge cpu clk
 	logic		CKE_N;		// clock enable
 	logic		CS_N;		// chip select** may not be used
 	logic		RAS_N;		// row address strobe
@@ -24,14 +25,14 @@ interface ddr3_mem_intf(input logic CPU_CLK);
 	wire		DQS;		// data strobe
 	
 // ********** Controller -> Memory ********** //
-	modport mem_cont_signals(
-		output 	RESET_N, CK, CKE_N, CS_N, RAS_N, CAS_N, WE_N, BA, ADDR,
+	modport cont_to_mem(
+		output 	RESET_N, CK, CK_N, CKE_N, CS_N, RAS_N, CAS_N, WE_N, BA, ADDR,
 		inout 	DQ, DM, DQS
 	);
 
 // ********** Memory -> Controller ********** //
-	modport main_mem_signals(
-		input 	RESET_N, CK, CKE_N, CS_N, RAS_N, CAS_N, WE_N, BA, ADDR,
+	modport mem_to_cont(
+		input 	RESET_N, CK, CK_N, CKE_N, CS_N, RAS_N, CAS_N, WE_N, BA, ADDR,
 		inout 	DQ, DM, DQS
 	);
 
@@ -42,9 +43,11 @@ endinterface
 interface ddr3_cpu_intf(input logic CPU_CLK);
 
 	logic		RESET_N;	// reset signal
-	logic		CMD;		// read/write command
 	logic		ADDR_VALID;	// valid address signal
-	logic		CS;		// chip select** may not be used
+	logic		CS_N;		// chip select** may not be used
+	logic		RAS_N;		// row address strobe
+	logic		CAS_N;		// column address strobe
+	logic		WE_N;		// write enable
 	logic		RD_DATA_RDY;	// read data ready
 	logic		RD_DATA_VALID;	// read data valid
 	logic	[31:0]	ADDR;		// address bits
@@ -53,14 +56,14 @@ interface ddr3_cpu_intf(input logic CPU_CLK);
 	logic	[63:0]	RD_DATA;	// read data
 
 // ********** Controller -> CPU ********** //
-	modport mem_controller(
-		input 	RESET_N, CMD, ADDR_VALID, CS, ADDR, WR_DATA, DM,
+	modport cont_to_cpu(
+		input 	RESET_N, ADDR_VALID, CS_N, RAS_N, CAS_N, WE_N, ADDR, WR_DATA, DM,
 		output	RD_DATA_RDY, RD_DATA_VALID, RD_DATA
 	);
 
 // ********** CPU -> Controller ********** //
-	modport cpu(
-		output 	RESET_N, CMD, ADDR_VALID, CS, ADDR, WR_DATA, DM,
+	modport cpu_to_cont(
+		output 	RESET_N, ADDR_VALID, CS_N, RAS_N, CAS_N, WE_N, ADDR, WR_DATA, DM,
 		input	RD_DATA_RDY, RD_DATA_VALID, RD_DATA
 	);
 
