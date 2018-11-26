@@ -14,14 +14,14 @@ interface ddr3_mem_intf(input logic CPU_CLK);
 	logic 		CK;		// high on posedge cpu clk
 	logic		CK_N;		// high on negedge cpu clk
 	logic		CKE_N;		// clock enable
-	logic		CS_N;		// chip select** may not be used
+	logic		CS_N;		// chip select.. used for command signal
 	logic		RAS_N;		// row address strobe
 	logic 		CAS_N;		// column address strobe
 	logic		WE_N;		// write enable
 	logic	[2:0]	BA;		// bank address
 	logic	[14:0]	ADDR;		// row address bits
 	wire	[7:0]	DQ;		// data bits
-	wire		DM;		// data mask
+	wire	[7:0]	DM;		// data mask
 	wire		DQS;		// data strobe
 	
 // ********** Controller -> Memory ********** //
@@ -44,27 +44,26 @@ interface ddr3_cpu_intf(input logic CPU_CLK);
 
 	logic		RESET_N;	// reset signal
 	logic		ADDR_VALID;	// valid address signal
-	logic		CS_N;		// chip select** may not be used
-	logic		RAS_N;		// row address strobe
-	logic		CAS_N;		// column address strobe
-	logic		WE_N;		// write enable
-	logic		RD_DATA_RDY;	// read data ready
+	logic		CMD_RDY;	// controller ready for cpu cmd
+	logic		CMD;		// command from cpu rd/wr#
+	logic		WR_DATA_VALID;	// write data valid
 	logic		RD_DATA_VALID;	// read data valid
-	logic	[31:0]	ADDR;		// address bits
+	logic	[2:0]	BA;		// bank address
+	logic	[14:0]	ADDR;		// address bits
 	logic	[63:0]	WR_DATA;	// write data
 	logic	[7:0]	DM;		// data mask
 	logic	[63:0]	RD_DATA;	// read data
 
 // ********** Controller -> CPU ********** //
 	modport cont_to_cpu(
-		input 	RESET_N, ADDR_VALID, CS_N, RAS_N, CAS_N, WE_N, ADDR, WR_DATA, DM,
-		output	RD_DATA_RDY, RD_DATA_VALID, RD_DATA
+		input 	RESET_N, ADDR_VALID, CMD, BA, ADDR, WR_DATA, DM,
+		output	CMD_RDY, WR_DATA_VALID, RD_DATA_VALID, RD_DATA
 	);
 
 // ********** CPU -> Controller ********** //
 	modport cpu_to_cont(
-		output 	RESET_N, ADDR_VALID, CS_N, RAS_N, CAS_N, WE_N, ADDR, WR_DATA, DM,
-		input	RD_DATA_RDY, RD_DATA_VALID, RD_DATA
+		output 	RESET_N, ADDR_VALID, CMD, BA, ADDR, WR_DATA, DM,
+		input	CMD_RDY, WR_DATA_VALID, RD_DATA_VALID, RD_DATA
 	);
-
+	
 endinterface
