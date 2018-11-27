@@ -46,7 +46,9 @@ interface ddr3_cpu_intf(input logic CPU_CLK);
 	logic		ADDR_VALID;	// valid address signal
 	logic		CMD_RDY;	// controller ready for cpu cmd
 	logic		CMD;		// command from cpu rd/wr#
+	logic		WR_READY;	// ready to write
 	logic		WR_DATA_VALID;	// write data valid
+	logic		RD_READY;	// ready to read
 	logic		RD_DATA_VALID;	// read data valid
 	logic	[2:0]	BA;		// bank address
 	logic	[14:0]	ADDR;		// address bits
@@ -56,13 +58,13 @@ interface ddr3_cpu_intf(input logic CPU_CLK);
 
 // ********** Controller -> CPU ********** //
 	modport cont_to_cpu(
-		input 	RESET_N, ADDR_VALID, CMD, BA, ADDR, WR_DATA, DM,
+		input 	RESET_N, ADDR_VALID, WR_READY, RD_READY, CMD, BA, ADDR, WR_DATA, DM,
 		output	CMD_RDY, WR_DATA_VALID, RD_DATA_VALID, RD_DATA
 	);
 
 // ********** CPU -> Controller ********** //
 	modport cpu_to_cont(
-		output 	RESET_N, ADDR_VALID, CMD, BA, ADDR, WR_DATA, DM,
+		output 	RESET_N, ADDR_VALID, WR_READY, RD_READY, CMD, BA, ADDR, WR_DATA, DM,
 		input	CMD_RDY, WR_DATA_VALID, RD_DATA_VALID, RD_DATA
 	);
 	

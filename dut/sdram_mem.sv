@@ -45,7 +45,7 @@ end
 
 final
 begin
-	$display("BA0[%5d]: %p", row_addr, bank0[32765:32767]);
+	$display($time, "  BA0[%5d]: %p", row_addr, bank0);
 end
 
 endmodule

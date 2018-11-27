@@ -107,24 +107,32 @@ begin
 		BANK_ACT: 
 		begin
 			cont_to_cpu.CMD_RDY	= 1;
-
-			if(row_addr != cont_to_cpu.ADDR)
+			
+			if(cont_to_cpu.ADDR_VALID)
 			begin
-				command		= Command.PRE;
-				nextState 	= PRE_C;
+				if(row_addr != cont_to_cpu.ADDR)
+				begin
+					command		= Command.PRE;
+					nextState 	= PRE_C;
+				end
+				else if(cont_to_cpu.CMD)
+				begin
+					command		= Command.RD;
+					nextState 	= READ;
+				end
+				else if(~cont_to_cpu.CMD)
+				begin
+					command		= Command.WR;
+					nextState	= WRITE;
+				end
+				else 
+					nextState 	= BANK_ACT;
 			end
-			else if(cont_to_cpu.CMD)
+			else
 			begin
-				command		= Command.RD;
-				nextState 	= READ;
+				command			= Command.NOP;
+				nextState		= BANK_ACT;
 			end
-			else if(~cont_to_cpu.CMD)
-			begin
-				command		= Command.WR;
-				nextState	= WRITE;
-			end
-			else 
-				nextState 	= BANK_ACT;
 		end		
 		READ:
 		begin
@@ -149,29 +157,41 @@ begin
 		end
 		WRITE: 
 		begin
-			if(row_addr != cont_to_cpu.ADDR)
+			if((cont_to_cpu.ADDR_VALID) && (cont_to_cpu.WR_READY))
 			begin
-				command		= Command.PRE;
-				nextState 	= PRE_C;
+				if(row_addr != cont_to_cpu.ADDR)
+				begin
+					command		= Command.PRE;
+					nextState 	= PRE_C;
+				end
+				else if(cont_to_cpu.CMD)
+				begin
+					command		= Command.RD;
+					nextState 	= READ;
+				end
+				else if((~cont_to_cpu.CMD) && (cont_to_cpu.WR_DATA_VALID))
+				begin
+					command		= Command.WR;
+					nextState	= WRITE;
+				end
+				else if((~cont_to_cpu.CMD) && (~cont_to_cpu.WR_DATA_VALID))
+				begin
+					command		= Command.NOP;
+					nextState	= WRITE;
+				end
+				else 
+					nextState 	= BANK_ACT;
 			end
-			else if(cont_to_cpu.CMD)
+			else if(~cont_to_cpu.ADDR_VALID)
 			begin
-				command		= Command.RD;
-				nextState 	= READ;
+				command			= Command.ZQC;
+				nextState 		= IDLE;
 			end
-			else if((~cont_to_cpu.CMD) && (cont_to_cpu.WR_DATA_VALID))
+			else
 			begin
-				command		= Command.WR;
-				nextState	= WRITE;
+				command			= Command.ACT;
+				nextState 		= BANK_ACT;
 			end
-			else if((~cont_to_cpu.CMD) && (~cont_to_cpu.WR_DATA_VALID))
-			begin
-				command		= Command.NOP;
-				nextState	= WRITE;
-			end
-			else 
-				nextState 	= BANK_ACT;
-
 		end
 		PRE_C: nextState = IDLE;
 		default: nextState = POWER_ON;
@@ -187,21 +207,21 @@ begin
 	else
 		cont_to_cpu.WR_DATA_VALID	<= 0;
 
-	if((State == WRITE) && (data_counter != 3'b111))
+	if((State == WRITE) && (data_counter != 3'b111) && (cont_to_cpu.ADDR_VALID))
 		data_counter <= data_counter + 1;
 	else
 		data_counter <= 0;
-	$display("DC: %1d", data_counter);
+	$display($time, "  DC: %1d", data_counter);
 end
 
 
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 0)) ? cont_to_cpu.WR_DATA[7:0]  : 'bz;
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 1)) ? cont_to_cpu.WR_DATA[15:8] : 'bz; 
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 2)) ? cont_to_cpu.WR_DATA[23:16]: 'bz;
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 3)) ? cont_to_cpu.WR_DATA[31:24]: 'bz; 
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 4)) ? cont_to_cpu.WR_DATA[39:32]: 'bz;
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 5)) ? cont_to_cpu.WR_DATA[47:40]: 'bz;
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 6)) ? cont_to_cpu.WR_DATA[55:48]: 'bz; 
-assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 7)) ? cont_to_cpu.WR_DATA[63:56]: 'bz; 
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 0) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[7:0]  : 'bz;
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 1) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[15:8] : 'bz; 
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 2) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[23:16]: 'bz;
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 3) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[31:24]: 'bz; 
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 4) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[39:32]: 'bz;
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 5) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[47:40]: 'bz;
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 6) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[55:48]: 'bz; 
+assign cont_to_mem.DQ = ((State == WRITE) && (data_counter == 7) && (cont_to_cpu.ADDR_VALID)) ? cont_to_cpu.WR_DATA[63:56]: 'bz; 
   	
 endmodule	

@@ -16,18 +16,16 @@ module ddr3_mem_cpu(
 import ddr3_mem_pkg::*;
 
 // ********** Parameters ********** //
-parameter MAX_ROW = 32768;
-parameter MAX_COL = 128;
+parameter MAX_ROW = 32768;	// total rows in memory
+parameter MAX_COL = 1024;	// total columns in memory
 
-parameter START_ROW = 32765;
+parameter START_ROW = 32765;	// row to start simulation
+parameter STOP_ROW  = 32767;	// row to stop simulation
 
 // ********** Local Variables ********** //
-logic	[14:0]	total_counter		= 0;
-logic	[4:0]	word_counter		= 0;
-logic	[14:0]	row_counter		= 0;
-logic	[6:0]	column_counter 		= 0;
-logic	[1:0]	reset_wait_counter 	= 0;
-logic	[63:0]	wr_data;
+logic	[4:0]	word_counter		= 0;	// count 64 bit words written
+logic	[14:0]	row_counter		= 0;	// count all rows written to
+logic	[1:0]	reset_wait_counter 	= 0;	// give reset time
 
 // ********** Reset Logic ********** //
 assign cpu_to_cont.RESET_N = (CPUState == RESET) ? 0 : 1;
@@ -46,9 +44,10 @@ begin
 			else
 				reset_wait_counter <= 0;
 		end
-		WRITE:cpu_to_cont.ADDR = row_counter + total_counter;
-		READ: cpu_to_cont.ADDR = START_ROW;
-		INIT: cpu_to_cont.ADDR = START_ROW;
+		IDLE: cpu_to_cont.ADDR 	<= START_ROW;
+		WRITE:cpu_to_cont.ADDR 	<= START_ROW + row_counter;
+		READ: cpu_to_cont.ADDR 	<= START_ROW;
+		INIT: cpu_to_cont.ADDR 	<= START_ROW;
 	endcase
 end
 
@@ -65,9 +64,6 @@ begin
 		end
 		INIT: 
 		begin
-			row_counter 		= START_ROW;
-			column_counter		= 0;
-
 			if(cpu_to_cont.CMD_RDY)
 				CPUnextState 	= IDLE;
 			else
@@ -75,40 +71,43 @@ begin
 		end
 		IDLE:
 		begin
-			cpu_to_cont.ADDR_VALID 	= 0;
-			cpu_to_cont.BA		= 0;
-			cpu_to_cont.CMD		= 0;		
+			cpu_to_cont.WR_READY		= 0;
+			cpu_to_cont.ADDR_VALID 		= 0;
+			cpu_to_cont.BA			= 0;
+			cpu_to_cont.CMD			= 0;		
 
-			cpu_to_cont.WR_DATA	= 64'b00000111_00000110_00000101_00000100_00000011_00000010_00000001_00000000;
+			cpu_to_cont.WR_DATA		= 64'b00000111_00000110_00000101_00000100_00000011_00000010_00000001_00000000;
 		
-			if((total_counter + START_ROW) < MAX_ROW)
-				CPUnextState 	= WRITE;
+			if((row_counter + START_ROW) > STOP_ROW)
+				CPUnextState 		= IDLE;
 			else
-				CPUnextState	= READ;
+			begin
+				cpu_to_cont.WR_READY	= 1;
+				cpu_to_cont.ADDR_VALID	= 1;
+				CPUnextState		= WRITE;
+			end
 		end
 		WRITE:
 		begin
-			cpu_to_cont.ADDR_VALID		= 1;
-
 			if(cpu_to_cont.WR_DATA_VALID == 1)
 				word_counter 		= word_counter + 1;
 
 			if(word_counter == 5'b10000)
-			begin
+			begin	
 				word_counter		= 0;
-				column_counter		= column_counter + 1;
-				total_counter		= total_counter + 1;
+				row_counter		= row_counter + 1;
 			end
 
-			if((total_counter + START_ROW) < MAX_ROW)
-				CPUnextState 		= WRITE;
-			else
+			if(((row_counter + START_ROW) > STOP_ROW) && (row_counter == (STOP_ROW - START_ROW) + 1))
 			begin
-				//rc
-				cpu_to_cont.ADDR_VALID 	= 0;
+				cpu_to_cont.ADDR_VALID	= 0;
+				cpu_to_cont.WR_READY	= 0;
 				CPUnextState 		= IDLE;
 			end
-			$display("WC: %2d	 CC: %2d	TR: %d", word_counter, column_counter, total_counter);
+			else
+				CPUnextState		= WRITE;
+
+			$display($time,"  WC: %2d	 RC: %d		ROW: %5d", word_counter, row_counter, (START_ROW + row_counter));
 		end
 		READ: CPUnextState = READ;
 		default: CPUnextState 	= POWER_ON;

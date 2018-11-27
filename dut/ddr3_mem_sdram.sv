@@ -87,8 +87,9 @@ begin
 		end
 		WRITE: 
 		begin
-			$display("BA: %1d ADDR: %b", mem_to_cont.BA, mem_to_cont.ADDR);
+			$display($time, "  BA: %1d ADDR: %b", mem_to_cont.BA, mem_to_cont.ADDR);
 			case(command)
+				Command.ACT:nextMEMState = BANK_ACT;
 				Command.RD: nextMEMState = READ;
 				Command.WR: nextMEMState = WRITE;
   				Command.NOP:nextMEMState = WRITE;
@@ -103,8 +104,13 @@ end
 
 always_ff @(posedge mem_to_cont.CK, posedge mem_to_cont.CK_N)
 begin
+	$display($time, "  BC: %d	  DIN: %b	DOUT: %b	BC: %1d", burst_count, i_data, o_data, burst_count);
+
 	if(MEMState == BANK_ACT)
+	begin
+		burst_count	<= 0;
 		col_addr 	<= 0;
+	end
 	else if(((MEMState == READ) || (MEMState == WRITE)) && (burst_count != 3'b111))
 	begin
 		col_addr    	<= col_addr + 1;
@@ -117,8 +123,6 @@ begin
 	end 
 	else
 		burst_count 	<= 0;
-
-	$display("DIN: %b	DOUT: %b	BC: %1d", i_data, o_data, burst_count);
 end
 
 assign en_mem		= ((MEMState == READ) || (MEMState == WRITE)) ? 1 : 0;
