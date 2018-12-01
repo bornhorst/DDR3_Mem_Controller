@@ -17,36 +17,14 @@ logic 		cpu_clk;
 logic		reset_n;
 logic		en;
 logic		cmd;
-logic		all_done;
 
-logic	[15:0]	writedata;
-logic	[15:0] 	readdata;
-
-logic	[63:0]  fullread;
-
-parameter MAX_ADDR = 100;
+parameter MAX_ADDR = 50;
 
 // ********** Configure Clock ********** //
-
-//tbx clkgen
-initial
+always 
 begin
 	cpu_clk = 1;
 	forever	#5 cpu_clk = ~cpu_clk;
-end
-
-//tbx clkgen
-initial 
-begin
-	cont_cpu.ADDR = 0;
-	reset_n = 1;
-	#10;
-	reset_n = 0;
-	#10;
-	reset_n = 1;
-	#10;
-	en	= 1;
-	#1000000 $finish;
 end
 
 assign command = {cont_mem.CS_N, cont_mem.RAS_N, cont_mem.CAS_N, cont_mem.WE_N};
@@ -73,12 +51,6 @@ ddr3_mem_sdram MEM_SDRAM(
 always @(posedge cpu_clk)
 begin
 
-if(~reset_n)
-	cmd <= 0;
-else
-begin
-
-
 	if(cont_cpu.ADDR > MAX_ADDR)
 	begin
 		cmd 		<= ~cmd;
@@ -96,8 +68,6 @@ begin
 		cont_cpu.BA		<= 0;
 		cont_cpu.ADDR_VALID 	<= 1;
 	end	
-
-	writedata <= 	cont_mem.WR_DATA;
 
 	if((cont_cpu.COL == 6'b111111) && (State == WRITE3))
 	begin
@@ -124,8 +94,6 @@ begin
 		cont_cpu.ADDR_VALID 	<= 1;
 	end	
 
-	readdata	<= cont_mem.RD_DATA;
-
 	if((cont_cpu.COL == 6'b111111) && (State == READ3))
 	begin
 		cont_cpu.ADDR		<= cont_cpu.ADDR + 1;
@@ -135,12 +103,9 @@ begin
 		cont_cpu.ADDR_VALID	<= 0;
 		cont_cpu.COL		<= cont_cpu.COL + 1;
 	end
-
+	
 	$display($time, " COL: %d 	RD_DATA: %b", cont_cpu.COL, cont_mem.RD_DATA);
 end
-
-end
-
 
 end
 

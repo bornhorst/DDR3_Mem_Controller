@@ -11,34 +11,29 @@ package ddr3_mem_pkg;
 
 // ********** Memory Control States ********** //
 	typedef enum{
-		POWER_ON,	// Power On Device
 		RESET,		// Reset Device
 		INIT,		// Program Mode Registers
 		IDLE,		// Wait State
-		SELF_REF,	// Refresh
-		REFRESH,	// Refresh
 		ACTIVATE,	// Activate
 		BANK_ACT,	// Activate bank
-		READ,		// Read from memory
-		READ_D,		// Read data 
-		READ_A,		// Read w/ bank activate
-		WRITE,		// Write to Memory
-		WRITE_D,	// Write data
-		WRITE_A,	// Write w/ bank activate
+		READ0,	
+		READ1,
+		READ2,
+		READ3,
+		WRITE0,
+		WRITE1,
+		WRITE2,
+		WRITE3,	
 		PRE_C		// Precharge row
 	} ddr3_states;
 
 	ddr3_states State, nextState;
-	ddr3_states CPUState, CPUnextState;
+	ddr3_states CPUState, nextCPUState;
 	ddr3_states MEMState, nextMEMState;
 
 // ********** Memory Command Signals ********** //
 	typedef	struct packed{
-		logic	[3:0]	MRS,	// Read from Mode Register
-				REF, 	// Refresh 
-				SRE,	// Self refresh
-				SRX,	// Exit self refresh
-				PRE,	// Precharge row
+		logic	[3:0]	PRE,	// Precharge row
 				ACT,	// Activate bank
 				WR,	// Write
 				RD,	// Read

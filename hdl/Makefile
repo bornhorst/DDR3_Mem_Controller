@@ -8,7 +8,6 @@ full:
 	vlib work
 	vlog ./dut/ddr3_mem_pkg.sv
 	vlog ./dut/*.sv
-	vlog ./tb/*.sv
 	vsim -c work 
 	vsim -c ddr3_mem_tb -do "run -all; quit"
 
@@ -16,7 +15,6 @@ compile:
 	vlib work
 	vlog ./dut/ddr3_mem_pkg.sv
 	vlog ./dut/*.sv
-	vlog ./tb/*.sv
 
 run: 	
 	vsim -c ddr3_mem_tb -do "run -all; quit"
