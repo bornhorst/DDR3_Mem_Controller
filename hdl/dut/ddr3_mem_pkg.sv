@@ -16,11 +16,11 @@ package ddr3_mem_pkg;
 		IDLE,		// Wait State
 		ACTIVATE,	// Activate
 		BANK_ACT,	// Activate bank
-		READ0,	
+		READ0,		// Read states
 		READ1,
 		READ2,
 		READ3,
-		WRITE0,
+		WRITE0,		// Write states
 		WRITE1,
 		WRITE2,
 		WRITE3,	
@@ -28,7 +28,6 @@ package ddr3_mem_pkg;
 	} ddr3_states;
 
 	ddr3_states State, nextState;
-	ddr3_states CPUState, nextCPUState;
 	ddr3_states MEMState, nextMEMState;
 
 // ********** Memory Command Signals ********** //

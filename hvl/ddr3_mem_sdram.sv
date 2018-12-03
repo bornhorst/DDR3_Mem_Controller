@@ -7,7 +7,8 @@
 //////////////////////////////////////////////////////////////////
 
 module ddr3_mem_sdram(
-	input logic			cpu_clk,
+	input 				cpu_clk,
+	input				reset_n,
 	ddr3_mem_intf.mem_to_cont	mem_to_cont	
 );
 
@@ -16,16 +17,18 @@ import ddr3_mem_pkg::*;
 
 // ********** Local Variables ********** //
 logic	[3:0]		command;
-logic	[15:0]		wr_data;
-logic	[0:63][15:0]	memory	[0:32767];
+logic	[7:0]		wr_data;
+logic	[0:127][7:0]	memory	[0:32767];
+
+logic	[2:0]		wait_counter;
 
 // ********** Reset Logic ********** //
-always_ff @(posedge mem_to_cont.CK, negedge mem_to_cont.RESET_N)
+always_ff @(posedge mem_to_cont.CK, negedge reset_n)
 begin
-	if(~mem_to_cont.RESET_N)
-		MEMState <= RESET;
+	if(~reset_n)
+		MEMState 	<= RESET;
 	else
-		MEMState <= nextMEMState;
+		MEMState 	<= nextMEMState;
 end
 
 // ********** Command Logic ********** //
@@ -37,15 +40,17 @@ begin
 		case(MEMState)
 		RESET:
 		begin
-			if(mem_to_cont.RESET_N)
+			//memory = '{default:'b0};
+
+			if(reset_n)
 				nextMEMState = INIT;
 			else
 				nextMEMState = RESET;
 		end
 		INIT:
 		begin
-			if(command == Command.ZQC)
-				nextMEMState = IDLE;
+			if(command == Command.PRE)
+				nextMEMState = PRE_C;
 			else
 				nextMEMState = INIT;
 		end
@@ -56,7 +61,13 @@ begin
 			else
 				nextMEMState = IDLE;
 		end
-		ACTIVATE: nextMEMState = BANK_ACT;
+		ACTIVATE: 
+		begin
+			if(wait_counter == 5)
+				nextMEMState = BANK_ACT;
+			else
+				nextMEMState = ACTIVATE;
+		end
 		BANK_ACT:
 		begin
 			case(command)
@@ -103,14 +114,39 @@ begin
 				default:    nextMEMState = BANK_ACT;
 			endcase
 		end
-		PRE_C:   nextMEMState   = IDLE;
+		PRE_C:
+		begin
+			if(wait_counter == 5)
+				nextMEMState = IDLE;
+			else
+				nextMEMState = PRE_C;
+		end
 		default: nextMEMState 	= RESET;
 	endcase
 end
 
-assign mem_to_cont.RD_DATA = 	(State == READ0) ? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
-				(State == READ1) ? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
-				(State == READ2) ? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
-				(State == READ3) ? memory[mem_to_cont.ADDR][mem_to_cont.COL] : 'bz;
+// ********** Wait State Counter ********** //
+always_ff @(posedge cpu_clk)
+begin
+	if(((State == ACTIVATE)||(State == PRE_C)) && (wait_counter == 5))
+		wait_counter <= 0;
+	else if((State == ACTIVATE)||(State == PRE_C))
+		wait_counter <= wait_counter + 1;
+	else
+		wait_counter <= 0;
+end
+
+// ********** Data Ready Signal ********** //
+assign mem_to_cont.DQS_N   = 	((State == READ0)||(State == READ1)||(State == READ2)||(State == READ3)) ? 0 : 1;
+
+// ********** Send Read Data to Controller ********** //
+assign mem_to_cont.RD_DATA = 	((~mem_to_cont.DQS_N) && (State == READ0) && (mem_to_cont.CK_N)) 	? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ0) && (mem_to_cont.CK)) 		? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ1) && (mem_to_cont.CK_N)) 	? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ1) && (mem_to_cont.CK)) 		? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ2) && (mem_to_cont.CK_N)) 	? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ2) && (mem_to_cont.CK)) 		? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ3) && (mem_to_cont.CK_N)) 	? memory[mem_to_cont.ADDR][mem_to_cont.COL] :
+				((~mem_to_cont.DQS_N) && (State == READ3) && (mem_to_cont.CK)) 		? memory[mem_to_cont.ADDR][mem_to_cont.COL] : 'bz;
 
 endmodule

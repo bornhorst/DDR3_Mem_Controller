@@ -4,8 +4,8 @@
 
 all: map compile sim
 
-#MODE ?= veloce
-MODE ?= puresim
+MODE ?= veloce
+#MODE ?= puresim
 
 map: 
 	vlib work
@@ -15,13 +15,17 @@ compile:
 	vlog ddr3_mem_pkg.sv
 	vlog ddr3_mem_intf.sv
 	vlog ddr3_mem_tb.sv
+	vlog ddr3_mem_cpu.sv
 	vlog ddr3_mem_cont.sv
 	vlog ddr3_mem_sdram.sv
+	vlog lfsr.sv
 	velanalyze ddr3_mem_pkg.sv 
 	velanalyze ddr3_mem_intf.sv 
 	velanalyze ddr3_mem_tb.sv 
+	velanalyze ddr3_mem_cpu.sv
 	velanalyze ddr3_mem_cont.sv 
 	velanalyze ddr3_mem_sdram.sv
+	velanalyze lfsr.sv
 	velcomp -top ddr3_mem_tb
 	velhvl -sim $(MODE) 
 
